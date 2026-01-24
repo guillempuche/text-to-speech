@@ -1,0 +1,15 @@
+pre-commit:
+  commands:
+    dprint:
+      glob: "*.{md,json,toml}"
+      run: |
+        echo "Formatting Markdown/JSON/TOML..."
+        dprint fmt {staged_files}
+      stage_fixed: true
+    ruff:
+      glob: "*.py"
+      run: |
+        echo "Formatting Python..."
+        ruff check --fix {staged_files}
+        ruff format {staged_files}
+      stage_fixed: true
