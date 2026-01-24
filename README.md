@@ -1,6 +1,6 @@
-# Voice Cloning
+# Text-to-Speech
 
-Tools for creating persistent voice models on Fish Audio S1. Record audio samples, pair them with transcripts, and upload to Fish Audio to produce reusable voice models for text-to-speech.
+Fish Audio tools — voice model creation and text-to-speech generation.
 
 ## Getting Started
 
@@ -15,16 +15,27 @@ cp .env.example .env
 
 ## Usage
 
+### Voice Cloning
+
 ```bash
 nix develop
-python fish_audio/scripts/upload_samples.py ./samples --title "My Voice" --enhance
+python voice_cloning/scripts/upload_samples.py ./samples --title "My Voice" --enhance
 ```
 
-The `.env` file is auto-loaded. The script pairs each audio file with its matching `.txt` transcript by stem name (e.g. `en_1.wav` + `en_1.txt`).
+Pairs each audio file with its matching `.txt` transcript by stem name (e.g. `en_1.wav` + `en_1.txt`). Prints the model ID on success.
 
 Options: `--visibility private|public|unlist`, `--tags english male`, `--env-file /path`.
 
-Prints the model ID on success for use with the Fish Audio TTS API.
+### TTS (Text-to-Speech)
+
+```bash
+nix develop
+python tts/scripts/generate.py ./texts --reference-id <voice-model-id>
+```
+
+Converts `.txt` files to speech audio using a voice model. Each file produces an audio file with the same stem name.
+
+Options: `--format mp3|wav|pcm`, `--speed 0.5-2.0`, `--output-dir ./path`, `--env-file /path`.
 
 ## Development
 
@@ -37,5 +48,7 @@ Pre-commit hooks (lefthook) auto-format staged files on commit.
 
 ## Structure
 
-- `fish_audio/` — Fish Audio integration (upload samples, manage models)
+- `voice_cloning/` — Voice model creation (upload samples, manage models)
+- `tts/` — Text-to-speech generation (convert text to audio)
+- `docs/` — Fish Audio SDK and API reference
 - `samples/` — Audio samples (gitignored) and transcripts (tracked)

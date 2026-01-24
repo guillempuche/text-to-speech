@@ -4,9 +4,14 @@ Rules for humans and AI agents working in this repo.
 
 ## What This Repo Does
 
-Manages voice cloning through Fish Audio S1. Record audio samples, pair with text transcripts, upload to Fish Audio, get a persistent voice model ID for TTS.
+Fish Audio toolkit: voice model creation and text-to-speech generation.
+
+- **Voice cloning** (`voice_cloning/`): Record audio samples, pair with text transcripts, upload to Fish Audio to create persistent voice models.
+- **TTS** (`tts/`): Convert text files to speech audio using existing voice models.
 
 Voice models support English and Spanish generation. Fish Audio separates language (from input text) from voice characteristics (from reference audio), so a Spanish-recorded sample produces Spanish-accented English when given English text.
+
+See `docs/fish-audio.md` for SDK and API reference links.
 
 See `README.md` for setup (including Nix installation) and usage.
 
