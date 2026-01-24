@@ -1,5 +1,5 @@
 {
-  description = "Xiroi Voice Cloning environment";
+  description = "Voice Cloning environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -37,6 +37,7 @@
             lint
             format
             pkgs.python3
+            pkgs.uv
             pkgs.dprint
             pkgs.ruff
             pkgs.lefthook
@@ -44,9 +45,13 @@
 
           shellHook = ''
             lefthook install
+            export UV_PYTHON_PREFERENCE=only-system
+            uv sync --quiet
+            source .venv/bin/activate
             echo ""
-            echo "Xiroi Voice Cloning Environment"
+            echo "Voice Cloning Environment"
             echo "  python: $(python3 --version)"
+            echo "  uv: $(uv --version)"
             echo "  dprint: $(dprint --version)"
             echo "  ruff: $(ruff --version)"
             echo "  lefthook: $(lefthook version)"
