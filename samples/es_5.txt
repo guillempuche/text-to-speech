@@ -1,0 +1,1 @@
+Estos son algunos datos: la reunión es a las 9:30 de la mañana, el martes veintiocho de enero. Trabajo con TypeScript, Node.js y SQL. La versión es 2.7.14 y el identificador es A-B-C, guion, uno, nueve, cero. El presupuesto está entre quince y setenta y cinco euros al mes, según el uso.

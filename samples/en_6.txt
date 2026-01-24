@@ -1,0 +1,1 @@
+Okay, quick question: do you want the short answer or the full explanation? If you want the short answer, we can do it in two steps. If you want the full explanation, I'll walk through the trade-offs and the edge cases. Either way is fine. Just tell me what you prefer, and I'll match your pace.

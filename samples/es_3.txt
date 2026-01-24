@@ -1,0 +1,1 @@
+Bienvenidos y gracias por estar aquí. En esta breve introducción voy a explicar el objetivo, las limitaciones y el plan de trabajo. Primero definimos el resultado esperado. Después hacemos una prueba pequeña para validar la idea. Y por último mejoramos la calidad, la velocidad y la fiabilidad del sistema.

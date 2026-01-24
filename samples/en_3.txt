@@ -1,0 +1,1 @@
+Welcome, and thanks for joining. In this short introduction, I'll explain the goal, the constraints, and the plan. First, we define what "good" looks like. Next, we test a small version to validate the approach. Finally, we improve quality, reduce latency, and make the system reliable. Clear inputs lead to clear outputs.

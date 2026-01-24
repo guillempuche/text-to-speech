@@ -1,0 +1,1 @@
+Hola, estoy grabando una muestra de voz limpia para clonar mi voz en un sistema de texto a voz. Hablo a un ritmo normal, con pronunciación clara y pausas naturales. Vivo en Barcelona y trabajo en tecnología. Si aparece ruido de fondo, pararé y volveré a grabar para que el audio quede lo más limpio posible.
