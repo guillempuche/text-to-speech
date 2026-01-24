@@ -4,11 +4,20 @@ Fish Audio tools — voice model creation and text-to-speech generation.
 
 ## Getting Started
 
-1. Install Nix via [Determinate Nix](https://docs.determinate.systems/determinate-nix) (if not already installed)
-2. Enter the dev shell and set up your API key:
+1. Install [Determinate Nix](https://docs.determinate.systems/determinate-nix) (if not already installed)
+2. Enter the dev shell:
 
 ```bash
 nix develop
+```
+
+This automatically installs Python dependencies, activates the venv, and sets up git hooks.
+
+Alternatively, install [direnv](https://direnv.net/) and run `direnv allow` — the shell activates automatically when you `cd` into the project.
+
+3. Set up your API key:
+
+```bash
 cp .env.example .env
 # Edit .env with your Fish Audio API key
 ```
