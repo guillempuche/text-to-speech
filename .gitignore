@@ -15,6 +15,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+uv.lock
 
 # Audio files
 *.wav
@@ -22,6 +23,10 @@ build/
 *.flac
 *.ogg
 audio_output/
+
+# Samples (track transcripts, ignore audio)
+samples/*
+!samples/*.txt
 
 # Claude
 .claude/settings.local.json

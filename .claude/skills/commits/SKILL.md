@@ -17,23 +17,23 @@ Scope is purely optional — only when truly required.
 
 ## Types
 
-| Type | When |
-|------|------|
-| `voice` | Voice samples config, model references |
+| Type      | When                                     |
+| --------- | ---------------------------------------- |
+| `voice`   | Voice samples config, model references   |
 | `scripts` | Python scripts for uploading, processing |
-| `ai` | Claude config, skills, hooks (.claude/) |
-| `chore` | Config, cleanup, structure |
-| `docs` | READMEs, documentation |
-| `infra` | Nix, CI, formatting config |
+| `ai`      | Claude config, skills, hooks (.claude/)  |
+| `chore`   | Config, cleanup, structure               |
+| `docs`    | READMEs, documentation                   |
+| `infra`   | Nix, CI, formatting config               |
 
 ## Scopes (purely optional)
 
 Subfolder names. Only use when truly needed for clarity.
 
-| Scope | When |
-|-------|------|
-| `fish_audio` | Fish Audio specific |
-| `samples` | Audio samples management |
+| Scope        | When                     |
+| ------------ | ------------------------ |
+| `fish_audio` | Fish Audio specific      |
+| `samples`    | Audio samples management |
 
 Both lists evolve — check actual structure.
 
