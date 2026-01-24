@@ -1,6 +1,6 @@
-# Fish Audio
+# Voice Cloning
 
-Scripts for managing voice models on Fish Audio.
+Scripts for creating voice models on Fish Audio.
 
 ## Scripts
 
@@ -12,10 +12,10 @@ Scripts for managing voice models on Fish Audio.
 export FISH_API_KEY=your_key
 
 # Upload samples (place audio + optional .txt transcripts in samples/)
-python fish_audio/scripts/upload_samples.py ./samples --title "My Voice"
+python voice_cloning/scripts/upload_samples.py ./samples --title "My Voice"
 
 # With enhancement and tags
-python fish_audio/scripts/upload_samples.py ./samples --title "My Voice" \
+python voice_cloning/scripts/upload_samples.py ./samples --title "My Voice" \
   --enhance --visibility private --tags english male
 ```
 
