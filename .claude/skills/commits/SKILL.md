@@ -1,6 +1,6 @@
 ---
 name: commits
-description: Commits changes to the voice_cloning repo with clear, conventional messages. Use when committing, saving changes, or asked to commit.
+description: Commits changes to the text-to-speech repo with clear, conventional messages. Use when committing, saving changes, or asked to commit.
 ---
 
 # Commit
@@ -20,6 +20,7 @@ Scope is purely optional — only when truly required.
 | Type      | When                                     |
 | --------- | ---------------------------------------- |
 | `voice`   | Voice samples config, model references   |
+| `tts`     | Text-to-speech scripts, generation       |
 | `scripts` | Python scripts for uploading, processing |
 | `ai`      | Claude config, skills, hooks (.claude/)  |
 | `chore`   | Config, cleanup, structure               |
@@ -30,10 +31,11 @@ Scope is purely optional — only when truly required.
 
 Subfolder names. Only use when truly needed for clarity.
 
-| Scope        | When                     |
-| ------------ | ------------------------ |
-| `fish_audio` | Fish Audio specific      |
-| `samples`    | Audio samples management |
+| Scope           | When                     |
+| --------------- | ------------------------ |
+| `voice_cloning` | Voice cloning scripts    |
+| `tts`           | TTS generation scripts   |
+| `samples`       | Audio samples management |
 
 Both lists evolve — check actual structure.
 
@@ -59,7 +61,7 @@ infra: add dprint config
 With body (when needed):
 
 ```
-scripts(fish_audio): update upload with transcript support
+scripts(voice_cloning): update upload with transcript support
 
 - Added companion .txt file reading.
 - Added --enhance flag for audio enhancement.
