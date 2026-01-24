@@ -41,6 +41,7 @@
             pkgs.dprint
             pkgs.ruff
             pkgs.lefthook
+            pkgs.ffmpeg
           ];
 
           shellHook = ''
