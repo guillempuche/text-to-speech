@@ -2,6 +2,7 @@
 """Upload voice cloning samples to Fish Audio."""
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated, Literal
@@ -13,7 +14,7 @@ except ImportError:
     print("Error: cyclopts not installed. Install with: pip install cyclopts")
     sys.exit(1)
 
-AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg"}
+AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
 
 
 def load_env_file(path: Path) -> None:
@@ -46,6 +47,26 @@ def find_audio_files(directory: Path) -> list[Path]:
         sys.exit(1)
 
     return [f for f in entries if f.suffix.lower() in AUDIO_EXTENSIONS and f.is_file()]
+
+
+def convert_to_wav(audio_path: Path) -> bytes:
+    """Convert an audio file to WAV (PCM 16-bit) via ffmpeg, return wav bytes."""
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-i",
+            str(audio_path),
+            "-f",
+            "wav",
+            "-acodec",
+            "pcm_s16le",
+            "pipe:1",
+        ],
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.decode().strip().splitlines()[-1])
+    return result.stdout
 
 
 def read_transcript(audio_path: Path) -> str | None:
@@ -122,8 +143,11 @@ def main(
 
     for audio_path in audio_files:
         try:
-            audio_bytes = audio_path.read_bytes()
-        except OSError as e:
+            if audio_path.suffix.lower() == ".wav":
+                audio_bytes = audio_path.read_bytes()
+            else:
+                audio_bytes = convert_to_wav(audio_path)
+        except (OSError, RuntimeError) as e:
             errors.append(f"  Could not read {audio_path.name}: {e}")
             continue
 
