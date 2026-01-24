@@ -9,11 +9,27 @@ Scripts for managing voice models on Fish Audio.
 ## Usage
 
 ```bash
-export FISH_AUDIO_API_KEY=your_key
+export FISH_API_KEY=your_key
 
-# Upload samples from a directory
+# Upload samples (place audio + optional .txt transcripts in samples/)
 python fish_audio/scripts/upload_samples.py ./samples --title "My Voice"
 
-# With transcripts (place .txt files alongside audio files)
-python fish_audio/scripts/upload_samples.py ./samples --title "My Voice" --enhance
+# With enhancement and tags
+python fish_audio/scripts/upload_samples.py ./samples --title "My Voice" \
+  --enhance --visibility private --tags english male
 ```
+
+## Transcript convention
+
+Place a `.txt` file with the same name as the audio file for each sample:
+
+```
+samples/
+  sample1.wav
+  sample1.txt    <- exact transcription of sample1.wav
+  sample2.wav
+  sample2.txt
+```
+
+Transcripts must be provided for ALL samples or none (partial is not supported).
+Providing transcripts skips ASR and yields better quality.
