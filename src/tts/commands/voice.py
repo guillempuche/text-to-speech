@@ -1,41 +1,18 @@
-#!/usr/bin/env python3
-"""Upload voice cloning samples to Fish Audio."""
+"""Voice management commands."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated, Literal
 
-try:
-    import cyclopts
-    from cyclopts import Parameter
-except ImportError:
-    print("Error: cyclopts not installed. Install with: pip install cyclopts")
-    sys.exit(1)
+import cyclopts
+from cyclopts import Parameter
+
+from tts.common import get_fish_client, load_api_key
+
+app = cyclopts.App(name="voice", help="Manage voice models.")
 
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
-
-
-def load_env_file(path: Path) -> None:
-    """Load KEY=VALUE pairs from a file into os.environ (won't override existing)."""
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError as e:
-        print(f"Error: could not read env file {path}: {e}")
-        sys.exit(1)
-
-    for line in content.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        key = key.strip()
-        value = value.strip().strip("\"'")
-        if key and key not in os.environ:
-            os.environ[key] = value
 
 
 def find_audio_files(directory: Path) -> list[Path]:
@@ -85,7 +62,8 @@ def read_transcript(audio_path: Path) -> str | None:
     return content
 
 
-def main(
+@app.command
+def upload(
     directory: Annotated[Path, Parameter(help="Directory containing audio samples")],
     *,
     title: Annotated[str, Parameter(help="Name for the voice model")],
@@ -97,33 +75,14 @@ def main(
         Literal["private", "public", "unlist"],
         Parameter(help="Voice model visibility"),
     ] = "private",
-    tags: Annotated[
-        list[str] | None, Parameter(help="Tags for the voice model")
-    ] = None,
+    tags: Annotated[list[str] | None, Parameter(help="Tags for the voice model")] = None,
     env_file: Annotated[
         Path | None, Parameter(name="--env-file", help="Path to .env file")
     ] = None,
 ) -> None:
     """Upload voice cloning samples to Fish Audio."""
-    # Load .env
-    env_path = env_file or Path(".env")
-    if env_file:
-        if not env_path.is_file():
-            print(f"Error: env file not found: {env_path}")
-            sys.exit(1)
-        load_env_file(env_path)
-    elif env_path.is_file():
-        load_env_file(env_path)
-
-    try:
-        from fishaudio import FishAudio
-    except ImportError:
-        print("Error: fishaudio not installed. Install with: pip install fishaudio")
-        sys.exit(1)
-
-    if not os.environ.get("FISH_API_KEY"):
-        print("Error: FISH_API_KEY environment variable not set.")
-        sys.exit(1)
+    load_api_key(env_file)
+    client = get_fish_client()
 
     if not directory.is_dir():
         print(f"Error: {directory} is not a directory")
@@ -176,9 +135,7 @@ def main(
 
     if texts and not all_have_transcripts:
         print("\nWarning: some files have transcripts and some don't.")
-        print(
-            "Provide transcripts for ALL files or none. Ignoring partial transcripts."
-        )
+        print("Provide transcripts for ALL files or none. Ignoring partial transcripts.")
         texts = []
 
     print(f"\nCreating voice model: {title}")
@@ -187,8 +144,6 @@ def main(
     if enhance:
         print("Audio enhancement: enabled")
     print(f"Visibility: {visibility}")
-
-    client = FishAudio()
 
     create_kwargs: dict = {
         "title": title,
@@ -210,5 +165,26 @@ def main(
         sys.exit(1)
 
 
-if __name__ == "__main__":
-    cyclopts.run(main)
+@app.command
+def list_models(
+    *,
+    env_file: Annotated[
+        Path | None, Parameter(name="--env-file", help="Path to .env file")
+    ] = None,
+) -> None:
+    """List your voice models."""
+    load_api_key(env_file)
+    client = get_fish_client()
+
+    try:
+        voices = client.voices.list()
+        if not voices:
+            print("No voice models found.")
+            return
+
+        print(f"Found {len(voices)} voice model(s):\n")
+        for v in voices:
+            print(f"  {v.id}  {v.title}")
+    except Exception as e:
+        print(f"Error listing voices: {e}")
+        sys.exit(1)

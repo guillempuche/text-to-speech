@@ -1,8 +1,29 @@
 [project]
 name = "text-to-speech"
-version = "0.1.0"
+version = "2025.01.25"
+description = "Text-to-speech CLI for Fish Audio"
 requires-python = ">=3.13"
 dependencies = [
-  "cyclopts",
-  "fish-audio-sdk",
+  "cyclopts>=4.5.0",
+  "fish-audio-sdk>=1.2.0",
 ]
+
+[project.scripts]
+tts = "tts.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-mock>=3.14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

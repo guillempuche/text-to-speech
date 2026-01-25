@@ -1,38 +1,12 @@
-#!/usr/bin/env python3
-"""Generate speech audio from text files using Fish Audio TTS."""
+"""Generate speech audio from text files."""
 
-import os
 import sys
 from pathlib import Path
 from typing import Annotated, Literal
 
-try:
-    import cyclopts
-    from cyclopts import Parameter
-except ImportError:
-    print("Error: cyclopts not installed. Install with: pip install cyclopts")
-    sys.exit(1)
+from cyclopts import Parameter
 
-
-def load_env_file(path: Path) -> None:
-    """Load KEY=VALUE pairs from a file into os.environ (won't override existing)."""
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError as e:
-        print(f"Error: could not read env file {path}: {e}")
-        sys.exit(1)
-
-    for line in content.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        key = key.strip()
-        value = value.strip().strip("\"'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+from tts.common import get_fish_client, load_api_key
 
 
 def find_text_files(path: Path) -> list[Path]:
@@ -50,7 +24,7 @@ def find_text_files(path: Path) -> list[Path]:
     sys.exit(1)
 
 
-def main(
+def generate(
     input_path: Annotated[
         Path, Parameter(help="Directory of .txt files or a single .txt file")
     ],
@@ -71,25 +45,8 @@ def main(
     ] = None,
 ) -> None:
     """Generate speech audio from text files using Fish Audio TTS."""
-    # Load .env
-    env_path = env_file or Path(".env")
-    if env_file:
-        if not env_path.is_file():
-            print(f"Error: env file not found: {env_path}")
-            sys.exit(1)
-        load_env_file(env_path)
-    elif env_path.is_file():
-        load_env_file(env_path)
-
-    try:
-        from fishaudio import FishAudio
-    except ImportError:
-        print("Error: fishaudio not installed. Install with: pip install fishaudio")
-        sys.exit(1)
-
-    if not os.environ.get("FISH_API_KEY"):
-        print("Error: FISH_API_KEY environment variable not set.")
-        sys.exit(1)
+    load_api_key(env_file)
+    client = get_fish_client()
 
     if speed < 0.5 or speed > 2.0:
         print("Error: speed must be between 0.5 and 2.0")
@@ -105,8 +62,6 @@ def main(
     print(f"Reference ID: {reference_id}")
     print(f"Format: {format}, Speed: {speed}")
     print(f"Output: {output_dir}\n")
-
-    client = FishAudio()
 
     for txt_path in text_files:
         try:
@@ -135,7 +90,3 @@ def main(
             continue
 
     print("\nDone.")
-
-
-if __name__ == "__main__":
-    cyclopts.run(main)
