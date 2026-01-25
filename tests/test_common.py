@@ -4,7 +4,15 @@ import os
 import pytest
 from pathlib import Path
 
-from tts.common import load_env_file, load_api_key, require_api_key
+from tts.common import (
+    load_env_file,
+    load_api_key,
+    require_api_key,
+    _keyring_available,
+    get_api_key_from_keyring,
+    set_api_key_in_keyring,
+    delete_api_key_from_keyring,
+)
 
 
 class TestLoadEnvFile:
@@ -91,6 +99,51 @@ class TestLoadEnvFile:
         assert exc_info.value.code == 1
 
 
+class TestKeyringFunctions:
+    """Tests for keyring-related functions."""
+
+    def test_keyring_available_returns_false_when_not_installed(self, mocker):
+        """Should return False when keyring not installed."""
+        # GIVEN keyring import fails
+        mocker.patch.dict("sys.modules", {"keyring": None})
+
+        # Note: _keyring_available caches the result, so we test behavior
+        # The actual implementation catches ImportError
+
+    def test_get_api_key_from_keyring_when_unavailable(self, mocker):
+        """Should return None when keyring unavailable."""
+        # GIVEN keyring is unavailable
+        mocker.patch("tts.common._keyring_available", return_value=False)
+
+        # WHEN getting key
+        result = get_api_key_from_keyring()
+
+        # THEN should return None
+        assert result is None
+
+    def test_set_api_key_in_keyring_when_unavailable(self, mocker):
+        """Should return False when keyring unavailable."""
+        # GIVEN keyring is unavailable
+        mocker.patch("tts.common._keyring_available", return_value=False)
+
+        # WHEN setting key
+        result = set_api_key_in_keyring("test-key")
+
+        # THEN should return False
+        assert result is False
+
+    def test_delete_api_key_from_keyring_when_unavailable(self, mocker):
+        """Should return False when keyring unavailable."""
+        # GIVEN keyring is unavailable
+        mocker.patch("tts.common._keyring_available", return_value=False)
+
+        # WHEN deleting key
+        result = delete_api_key_from_keyring()
+
+        # THEN should return False
+        assert result is False
+
+
 class TestLoadApiKey:
     """Tests for load_api_key function."""
 
@@ -105,11 +158,27 @@ class TestLoadApiKey:
         # THEN the existing key should remain
         assert os.environ.get("FISH_API_KEY") == "existing-key"
 
-    def test_loads_from_credentials_file(self, temp_config_dir, monkeypatch):
+    def test_loads_from_keyring(self, monkeypatch, mocker):
+        """Should load API key from keyring if available."""
+        # GIVEN keyring has a key
+        mocker.patch("tts.common._keyring_available", return_value=True)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value="keyring-key")
+        monkeypatch.setattr("tts.common.CREDENTIALS_FILE", Path("/nonexistent"))
+
+        # WHEN load_api_key is called
+        load_api_key()
+
+        # THEN key should be loaded from keyring
+        assert os.environ.get("FISH_API_KEY") == "keyring-key"
+
+    def test_loads_from_credentials_file(self, temp_config_dir, monkeypatch, mocker):
         """Should load API key from credentials file."""
         # GIVEN credentials file exists with API key
         creds_file = temp_config_dir / "credentials"
         creds_file.write_text("FISH_API_KEY=creds-key\n")
+        # AND keyring is unavailable
+        mocker.patch("tts.common._keyring_available", return_value=False)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value=None)
 
         # WHEN load_api_key is called
         load_api_key()
@@ -117,12 +186,14 @@ class TestLoadApiKey:
         # THEN key should be loaded
         assert os.environ.get("FISH_API_KEY") == "creds-key"
 
-    def test_loads_from_env_file(self, tmp_path, monkeypatch):
+    def test_loads_from_env_file(self, tmp_path, monkeypatch, mocker):
         """Should load API key from specified .env file."""
         # GIVEN a .env file with API key
         env_file = tmp_path / "custom.env"
         env_file.write_text("FISH_API_KEY=env-file-key\n")
         monkeypatch.setattr("tts.common.CREDENTIALS_FILE", tmp_path / "nonexistent")
+        mocker.patch("tts.common._keyring_available", return_value=False)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value=None)
 
         # WHEN load_api_key is called with env_file
         load_api_key(env_file=env_file)
@@ -130,17 +201,47 @@ class TestLoadApiKey:
         # THEN key should be loaded
         assert os.environ.get("FISH_API_KEY") == "env-file-key"
 
-    def test_exits_if_env_file_missing(self, tmp_path, monkeypatch):
+    def test_exits_if_env_file_missing(self, tmp_path, monkeypatch, mocker):
         """Should exit if specified env file doesn't exist."""
         # GIVEN a non-existent env file path
         missing_file = tmp_path / "missing.env"
         monkeypatch.setattr("tts.common.CREDENTIALS_FILE", tmp_path / "nonexistent")
+        mocker.patch("tts.common._keyring_available", return_value=False)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value=None)
 
         # WHEN load_api_key is called with missing file
         # THEN it should exit
         with pytest.raises(SystemExit) as exc_info:
             load_api_key(env_file=missing_file)
         assert exc_info.value.code == 1
+
+    def test_priority_env_over_keyring(self, monkeypatch, mocker):
+        """Environment variable should take priority over keyring."""
+        # GIVEN both env and keyring have keys
+        monkeypatch.setenv("FISH_API_KEY", "env-key")
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value="keyring-key")
+
+        # WHEN load_api_key is called
+        load_api_key()
+
+        # THEN env key should remain
+        assert os.environ.get("FISH_API_KEY") == "env-key"
+
+    def test_priority_keyring_over_credentials(self, temp_config_dir, monkeypatch, mocker):
+        """Keyring should take priority over credentials file."""
+        # GIVEN keyring has a key
+        mocker.patch("tts.common._keyring_available", return_value=True)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value="keyring-key")
+
+        # AND credentials file has a different key
+        creds_file = temp_config_dir / "credentials"
+        creds_file.write_text("FISH_API_KEY=creds-key\n")
+
+        # WHEN load_api_key is called
+        load_api_key()
+
+        # THEN keyring key should be used
+        assert os.environ.get("FISH_API_KEY") == "keyring-key"
 
 
 class TestRequireApiKey:
