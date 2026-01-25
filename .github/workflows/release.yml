@@ -50,6 +50,7 @@ jobs:
           mv pyapp-v* pyapp-source
 
       - name: Build wheel
+        shell: bash
         run: |
           pip install build
           python -m build --wheel
@@ -57,11 +58,11 @@ jobs:
       - name: Build executable
         shell: bash
         env:
-          PYAPP_PROJECT_PATH: ${{ github.workspace }}/dist
           PYAPP_PYTHON_VERSION: "3.13"
           PYAPP_EXEC_MODULE: tts
           PYAPP_DISTRIBUTION_EMBED: "1"
         run: |
+          export PYAPP_PROJECT_PATH=$(ls ${{ github.workspace }}/dist/*.whl)
           cd pyapp-source
           cargo build --release --target ${{ matrix.target }}
 

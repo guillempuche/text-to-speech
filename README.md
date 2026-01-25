@@ -46,12 +46,7 @@ tts voice upload ./samples --title "My Voice"
 ## Update
 
 ```bash
-# Check for updates
 tts update
-
-# Update manually
-curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64
-chmod +x tts
 ```
 
 ## Commands
@@ -71,6 +66,7 @@ tts generate ./texts --reference-id <voice-model-id>
 ```
 
 Options:
+
 - `--format mp3|wav|pcm` (default: mp3)
 - `--speed 0.5-2.0` (default: 1.0)
 - `--output-dir ./path` (default: ./audio_output)
@@ -84,29 +80,15 @@ tts voice upload ./samples --title "My Voice" --enhance
 Pairs each audio file with its matching `.txt` transcript (e.g. `en_1.wav` + `en_1.txt`).
 
 Options:
+
 - `--visibility private|public|unlist`
 - `--tags english male`
 - `--enhance` (audio quality enhancement)
 
-## Development
+## Supported Languages
 
-1. Install [Determinate Nix](https://docs.determinate.systems/determinate-nix)
-2. Enter dev shell: `nix develop`
-3. Configure: `tts configure <your-api-key>`
+Fish Audio auto-detects from 13 languages: English, Chinese, Japanese, German, French, Spanish, Korean, Arabic, Russian, Dutch, Italian, Polish, Portuguese.
 
-```bash
-uv run pytest   # Run tests
-lint            # Check formatting
-format          # Auto-fix formatting
-```
+## Contributing
 
-## Releases
-
-Push a calver tag to trigger a release build:
-
-```bash
-git tag v2025.01.25
-git push origin v2025.01.25
-```
-
-Builds for Linux, macOS (x64/arm64), and Windows.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and release process.

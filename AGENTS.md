@@ -68,6 +68,7 @@ GitHub Actions:
 
 ## Docs
 
+- `README.md` — User-facing install and usage
+- `CONTRIBUTING.md` — Development setup and releases
 - `CHANGELOG.md` — Release notes (source of truth)
-- `README.md` — User-facing setup and usage
 - `docs/fish-audio.md` — SDK and API reference
