@@ -7,6 +7,17 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 ## [Unreleased]
 
+## [2026.01.25.1]
+
+### Added
+
+- Config system with TOML storage (`~/.config/tts/config.toml`)
+- Keyring storage for secure API key management
+- Configure subcommands: `api-key`, `voice`, `output-dir`, `format`, `speed`
+- `--show` and `--reset` flags for configure command
+- Glob pattern support for generate: `*.txt`, `**/*.txt`
+- Config defaults for generate options
+
 ## [2026.01.25]
 
 ### Added
