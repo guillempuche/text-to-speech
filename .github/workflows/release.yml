@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: tts-linux-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: tts-macos-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: tts-macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: tts-windows-x64.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Download PyApp
+        shell: bash
+        run: |
+          curl -L https://github.com/ofek/pyapp/releases/latest/download/source.tar.gz -o pyapp.tar.gz
+          tar -xzf pyapp.tar.gz
+          mv pyapp-v* pyapp-source
+
+      - name: Build wheel
+        run: |
+          pip install build
+          python -m build --wheel
+
+      - name: Build executable
+        shell: bash
+        env:
+          PYAPP_PROJECT_PATH: ${{ github.workspace }}/dist
+          PYAPP_PYTHON_VERSION: "3.13"
+          PYAPP_EXEC_MODULE: tts
+          PYAPP_DISTRIBUTION_EMBED: "1"
+        run: |
+          cd pyapp-source
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Rename binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mv pyapp-source/target/${{ matrix.target }}/release/pyapp ${{ matrix.name }}
+          chmod +x ${{ matrix.name }}
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mv pyapp-source/target/${{ matrix.target }}/release/pyapp.exe ${{ matrix.name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          merge-multiple: true
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Extract section for this version from CHANGELOG.md
+          # Matches from "## [VERSION]" until next "## [" or end of file
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+          # If no specific version found, use Unreleased section
+          if [ -z "$NOTES" ]; then
+            NOTES=$(awk '/^## \[Unreleased\]/{found=1; next} /^## \[/{if(found) exit} found{print}' CHANGELOG.md)
+          fi
+          # Write to file for multi-line support
+          echo "$NOTES" > release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: binaries/*
+          body_path: release_notes.md
+          append_body: true
+          body: |
+
+            ---
+
+            ## Install
+
+            ```bash
+            # macOS Apple Silicon
+            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64 && chmod +x tts
+
+            # macOS Intel
+            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-x64 && chmod +x tts
+
+            # Linux
+            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-linux-x64 && chmod +x tts
+            ```
+
+            Windows: Download `tts-windows-x64.exe` above.
+
+            ## Setup
+
+            ```bash
+            ./tts configure <your-api-key>  # Get key at https://fish.audio
+            ./tts generate ./texts --reference-id <voice-id>
+            ./tts update  # Check for updates
+            ```
