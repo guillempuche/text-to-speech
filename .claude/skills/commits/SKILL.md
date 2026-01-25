@@ -26,6 +26,7 @@ Scope is purely optional — only when truly required.
 | `chore`   | Config, cleanup, structure               |
 | `docs`    | READMEs, documentation                   |
 | `infra`   | Nix, CI, formatting config               |
+| `release` | Version bumps and releases               |
 
 ## Scopes (purely optional)
 
