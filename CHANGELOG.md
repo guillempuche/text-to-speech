@@ -7,6 +7,8 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 ## [Unreleased]
 
+## [2026.01.25]
+
 ### Added
 
 - Unified CLI with subcommands (`tts generate`, `tts voice upload`, `tts configure`)

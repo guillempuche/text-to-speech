@@ -1,6 +1,6 @@
 [project]
 name = "text-to-speech"
-version = "2025.01.25"
+version = "2026.01.25"
 description = "Text-to-speech CLI for Fish Audio"
 requires-python = ">=3.13"
 dependencies = [
