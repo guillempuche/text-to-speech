@@ -13,7 +13,7 @@ app = cyclopts.App(
 
 # Register subcommands
 app.command(generate.generate)
-app.command(configure.configure)
+app.command(configure.app, name="configure")
 app.command(update.update)
 app.command(voice.app, name="voice")
 
