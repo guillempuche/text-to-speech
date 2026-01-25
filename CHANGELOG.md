@@ -21,19 +21,3 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 - Restructured from separate scripts to `src/tts/` package
 - Switched to calver versioning (YYYY.MM.DD)
-
-<!-- Release template:
-## [YYYY.MM.DD]
-
-### Added
-- New features
-
-### Changed
-- Changes to existing functionality
-
-### Fixed
-- Bug fixes
-
-### Removed
-- Removed features
--->
