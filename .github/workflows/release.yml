@@ -58,6 +58,8 @@ jobs:
       - name: Build executable
         shell: bash
         env:
+          PYAPP_PROJECT_NAME: text-to-speech
+          PYAPP_PROJECT_VERSION: ${{ github.ref_name }}
           PYAPP_PYTHON_VERSION: "3.13"
           PYAPP_EXEC_MODULE: tts
           PYAPP_DISTRIBUTION_EMBED: "1"
