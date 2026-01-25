@@ -9,6 +9,17 @@ Quick reference for Fish Audio SDK and API.
 - [Emotions & Prosody](https://docs.fish.audio/features/ssml) — SSML-style control for expressiveness
 - [Speed Control](https://docs.fish.audio/api-reference/tts#parameters) — 0.5x to 2.0x speech rate
 
+### Supported Languages
+
+Fish Audio supports **13 languages** with automatic detection:
+
+```
+English, Chinese, Japanese, German, French, Spanish, Korean,
+Arabic, Russian, Dutch, Italian, Polish, Portuguese
+```
+
+Language detection is automatic - simply provide text in your target language.
+
 ## Voice Cloning
 
 - [Voice Cloning SDK Guide](https://docs.fish.audio/sdk/voices) — `client.voices.create()` usage

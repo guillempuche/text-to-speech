@@ -4,50 +4,70 @@ Rules for humans and AI agents working in this repo.
 
 ## What This Repo Does
 
-Fish Audio toolkit: voice model creation and text-to-speech generation.
+Fish Audio CLI for voice cloning and text-to-speech generation.
 
-- **Voice cloning** (`voice_cloning/`): Record audio samples, pair with text transcripts, upload to Fish Audio to create persistent voice models.
-- **TTS** (`tts/`): Convert text files to speech audio using existing voice models.
+- **`tts generate`**: Convert text files to speech using voice models
+- **`tts voice upload`**: Create voice models from audio samples + transcripts
+- **`tts configure`**: Save API key for CLI usage
+- **`tts update`**: Check for new versions
 
-Voice models support English and Spanish generation. Fish Audio separates language (from input text) from voice characteristics (from reference audio), so a Spanish-recorded sample produces Spanish-accented English when given English text.
-
-See `docs/fish-audio.md` for SDK and API reference links.
-
-See `README.md` for setup (including Nix installation) and usage.
+Fish Audio supports 13 languages with auto-detection (English, Chinese, Japanese, German, French, Spanish, Korean, Arabic, Russian, Dutch, Italian, Polish, Portuguese).
 
 ## Golden Rules
 
-1. **No secrets in git** — Use `.env.example` for variables
+1. **No secrets in git** — Use `tts configure` or `.env`
 1. **Single source of truth** — Don't duplicate, reference instead
-1. **Never commit audio samples to git** — `samples/` content is gitignored
-1. **Keep transcripts alongside audio** — Companion `.txt` files with exact transcriptions
+1. **Never commit audio samples** — `samples/` content is gitignored
+1. **Keep transcripts with audio** — Companion `.txt` files with exact transcriptions
+1. **Calver versioning** — Format: `YYYY.MM.DD` (e.g., `2025.01.25`)
+1. **CHANGELOG is source of truth** — GitHub release notes are extracted from it
+
+## CLI Structure
+
+```
+src/tts/
+├── __init__.py          # Version
+├── __main__.py          # python -m tts entry
+├── cli.py               # Main app with subcommands
+├── common.py            # Shared utilities (API key loading)
+└── commands/
+    ├── configure.py     # tts configure
+    ├── generate.py      # tts generate
+    ├── update.py        # tts update
+    └── voice.py         # tts voice upload/list-models
+```
+
+Adding a new command:
+1. Create `src/tts/commands/mycommand.py`
+2. Import and register in `src/tts/cli.py`
 
 ## Development
 
-### Nix Shell
-
 ```bash
-# Enter the dev shell (installs all tools)
-nix develop
-
-# Then run commands directly:
-lint        # Check formatting (no changes)
-format      # Format all files (auto-fix)
+nix develop              # Enter shell
+tts --help               # Test CLI
+uv run tts generate ...  # Run with dependencies
+uv run pytest            # Run tests
+lint                     # Check formatting
+format                   # Auto-fix
 ```
 
-### Without Nix Shell
+## Releasing
 
-```bash
-# One-off commands (no need to enter shell):
-nix develop -c lint
-nix develop -c format
-```
+Use `/release` skill or manually:
 
-### Tools
+1. **Update CHANGELOG.md** — Move [Unreleased] content to new version section
+2. **Update version** in `pyproject.toml` and `src/tts/__init__.py`
+3. **Commit**: `git commit -m "release: v2025.01.25"`
+4. **Tag and push**: `git tag v2025.01.25 && git push origin main v2025.01.25`
 
-| Tool   | Formats              | Lint flag      | Format flag                           |
-| ------ | -------------------- | -------------- | ------------------------------------- |
-| dprint | Markdown, JSON, TOML | `dprint check` | `dprint fmt`                          |
-| ruff   | Python               | `ruff check .` | `ruff check --fix . && ruff format .` |
+GitHub Actions:
+- Builds executables for Linux, macOS (x64/arm64), Windows
+- Extracts release notes from CHANGELOG.md
+- Creates GitHub Release with binaries
 
-Pre-commit hooks (lefthook) auto-format staged files on commit.
+## Docs
+
+- `CHANGELOG.md` — Release notes (source of truth)
+- `README.md` — User-facing setup and usage
+- `docs/fish-audio.md` — SDK and API reference

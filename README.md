@@ -1,63 +1,112 @@
 # Text-to-Speech
 
-Fish Audio tools — voice model creation and text-to-speech generation.
+Fish Audio CLI for voice cloning and text-to-speech generation.
 
-## Getting Started
+## Install
 
-1. Install [Determinate Nix](https://docs.determinate.systems/determinate-nix) (if not already installed)
-2. Enter the dev shell:
-
-```bash
-nix develop
-```
-
-This automatically installs Python dependencies, activates the venv, and sets up git hooks.
-
-Alternatively, install [direnv](https://direnv.net/) and run `direnv allow` — the shell activates automatically when you `cd` into the project.
-
-3. Set up your API key:
+### macOS (Apple Silicon)
 
 ```bash
-cp .env.example .env
-# Edit .env with your Fish Audio API key
+curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64
+chmod +x tts
+sudo mv tts /usr/local/bin/  # Optional: add to PATH
 ```
 
-## Usage
+### macOS (Intel)
+
+```bash
+curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-x64
+chmod +x tts
+```
+
+### Linux
+
+```bash
+curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-linux-x64
+chmod +x tts
+```
+
+### Windows
+
+Download `tts-windows-x64.exe` from [Releases](https://github.com/guillempuche/text-to-speech/releases/latest).
+
+## Quick Start
+
+```bash
+# Configure your API key (get one at https://fish.audio)
+tts configure <your-api-key>
+
+# Generate speech from text files
+tts generate ./texts --reference-id <voice-model-id>
+
+# Upload voice samples to create a model
+tts voice upload ./samples --title "My Voice"
+```
+
+## Update
+
+```bash
+# Check for updates
+tts update
+
+# Update manually
+curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64
+chmod +x tts
+```
+
+## Commands
+
+```
+tts configure <api-key>     Save API key for future use
+tts generate                Convert text files to speech
+tts voice upload            Upload samples to create voice model
+tts voice list-models       List your voice models
+tts update                  Check for updates
+```
+
+### Generate Speech
+
+```bash
+tts generate ./texts --reference-id <voice-model-id>
+```
+
+Options:
+- `--format mp3|wav|pcm` (default: mp3)
+- `--speed 0.5-2.0` (default: 1.0)
+- `--output-dir ./path` (default: ./audio_output)
 
 ### Voice Cloning
 
 ```bash
-nix develop
-python voice_cloning/scripts/upload_samples.py ./samples --title "My Voice" --enhance
+tts voice upload ./samples --title "My Voice" --enhance
 ```
 
-Pairs each audio file with its matching `.txt` transcript by stem name (e.g. `en_1.wav` + `en_1.txt`). Prints the model ID on success.
+Pairs each audio file with its matching `.txt` transcript (e.g. `en_1.wav` + `en_1.txt`).
 
-Options: `--visibility private|public|unlist`, `--tags english male`, `--env-file /path`.
-
-### TTS (Text-to-Speech)
-
-```bash
-nix develop
-python tts/scripts/generate.py ./texts --reference-id <voice-model-id>
-```
-
-Converts `.txt` files to speech audio using a voice model. Each file produces an audio file with the same stem name.
-
-Options: `--format mp3|wav|pcm`, `--speed 0.5-2.0`, `--output-dir ./path`, `--env-file /path`.
+Options:
+- `--visibility private|public|unlist`
+- `--tags english male`
+- `--enhance` (audio quality enhancement)
 
 ## Development
 
+1. Install [Determinate Nix](https://docs.determinate.systems/determinate-nix)
+2. Enter dev shell: `nix develop`
+3. Configure: `tts configure <your-api-key>`
+
 ```bash
-lint      # Check formatting (no changes)
-format    # Auto-fix formatting
+uv run pytest   # Run tests
+lint            # Check formatting
+format          # Auto-fix formatting
 ```
 
-Pre-commit hooks (lefthook) auto-format staged files on commit.
+## Releases
 
-## Structure
+Push a calver tag to trigger a release build:
 
-- `voice_cloning/` — Voice model creation (upload samples, manage models)
-- `tts/` — Text-to-speech generation (convert text to audio)
-- `docs/` — Fish Audio SDK and API reference
-- `samples/` — Audio samples (gitignored) and transcripts (tracked)
+```bash
+git tag v2025.01.25
+git push origin v2025.01.25
+```
+
+Builds for Linux, macOS (x64/arm64), and Windows.
