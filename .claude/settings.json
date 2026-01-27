@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n:*)",
+      "Bash(chmod:*)",
+      "Bash(date:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git describe:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(git status:*)",
+      "Bash(git tag:*)",
+      "Bash(gh release:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(ls:*)",
+      "Bash(nix develop:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run tts:*)",
+      "Bash(uv sync:*)",
+      "Bash(.venv/bin/python:*)",
+      "mcp__exa__get_code_context_exa",
+      "mcp__exa__web_search_exa",
+      "mcp__firecrawl__firecrawl_scrape",
+      "mcp__firecrawl__firecrawl_search",
+      "Skill(commits)",
+      "Skill(release)"
+    ]
+  }
+}
