@@ -71,6 +71,30 @@ tts generate "**/*.txt"
 tts update
 ```
 
+## Uninstall
+
+### macOS & Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/guillempuche/text-to-speech/main/uninstall.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/guillempuche/text-to-speech/main/uninstall.ps1 | iex
+```
+
+### Options
+
+```bash
+# Keep configuration files (only remove binary)
+TTS_KEEP_CONFIG=true curl -fsSL .../uninstall.sh | bash
+
+# Custom install directory (if you used one during install)
+TTS_INSTALL_DIR=~/.local/bin curl -fsSL .../uninstall.sh | bash
+```
+
 ## Commands
 
 ### Configure
