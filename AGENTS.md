@@ -22,14 +22,28 @@ Fish Audio supports 13 languages with auto-detection (English, Chinese, Japanese
 1. **Calver versioning** — Format: `YYYY.MM.DD` (e.g., `2025.01.25`)
 1. **CHANGELOG is source of truth** — GitHub release notes are extracted from it
 
-## CLI Structure
+## Key Files
+
+### Installation & Distribution
+
+| File | Purpose |
+|------|---------|
+| `install.sh` | Unix/macOS installer (curl \| bash) |
+| `install.ps1` | Windows PowerShell installer |
+| `uninstall.sh` | Unix/macOS uninstaller |
+| `uninstall.ps1` | Windows PowerShell uninstaller |
+| `pyproject.toml` | Python project config, version, dependencies |
+| `.github/workflows/release.yml` | CI/CD: builds binaries, creates releases |
+
+### CLI Source Code
 
 ```
 src/tts/
-├── __init__.py          # Version
-├── __main__.py          # python -m tts entry
-├── cli.py               # Main app with subcommands
-├── common.py            # Shared utilities (API key loading)
+├── __init__.py          # Version string
+├── __main__.py          # python -m tts entry point
+├── cli.py               # Main app, subcommand registration
+├── config.py            # Config file management (~/.config/tts/config.toml)
+├── common.py            # Shared utilities, API key loading, keyring
 └── commands/
     ├── configure.py     # tts configure
     ├── generate.py      # tts generate
@@ -37,7 +51,36 @@ src/tts/
     └── voice.py         # tts voice upload/list-models
 ```
 
-Adding a new command:
+### Configuration Locations (Runtime)
+
+| Location | Content |
+|----------|---------|
+| `~/.config/tts/config.toml` | User settings (voice, format, speed) |
+| `~/.config/tts/credentials` | API key fallback (if keyring unavailable) |
+| System keyring | API key (macOS Keychain, Windows Credential Manager, Linux Secret Service) |
+
+### Documentation
+
+| File | Purpose |
+|------|---------|
+| `README.md` | User-facing install and usage |
+| `CONTRIBUTING.md` | Development setup and workflow |
+| `CHANGELOG.md` | Release notes (source of truth for releases) |
+| `docs/fish-audio.md` | Fish Audio SDK and API reference |
+
+### README Topics (for user-facing docs)
+
+The README covers these sections in order:
+- **Install** — `install.sh`, `install.ps1`, env vars (`TTS_VERSION`, `TTS_INSTALL_DIR`)
+- **Quick Start** — API key setup, default voice, generate examples
+- **Update** — `tts update` command
+- **Uninstall** — `uninstall.sh`, `uninstall.ps1`, env vars (`TTS_KEEP_CONFIG`)
+- **Commands** — Configure, Generate, Voice cloning, List models
+- **Configuration** — Config file format, API key storage priority
+- **Supported Languages** — 13 languages with auto-detection
+
+## Adding a New Command
+
 1. Create `src/tts/commands/mycommand.py`
 2. Import and register in `src/tts/cli.py`
 
@@ -65,10 +108,3 @@ GitHub Actions:
 - Builds executables for Linux, macOS (x64/arm64), Windows
 - Extracts release notes from CHANGELOG.md
 - Creates GitHub Release with binaries
-
-## Docs
-
-- `README.md` — User-facing install and usage
-- `CONTRIBUTING.md` — Development setup and releases
-- `CHANGELOG.md` — Release notes (source of truth)
-- `docs/fish-audio.md` — SDK and API reference
