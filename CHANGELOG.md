@@ -7,6 +7,14 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 ## [Unreleased]
 
+## [2026.01.27]
+
+### Added
+
+- Cross-platform install scripts (`install.sh`, `install.ps1`)
+- SHA256 checksum verification for downloads
+- Auto PATH configuration on Windows
+
 ## [2026.01.25.1]
 
 ### Added
