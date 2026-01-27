@@ -27,31 +27,27 @@ Fish Audio CLI for voice cloning and text-to-speech generation.
 
 ## Install
 
-### macOS (Apple Silicon)
+### macOS & Linux
 
 ```bash
-curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64
-chmod +x tts
-sudo mv tts /usr/local/bin/  # Optional: add to PATH
+curl -fsSL https://raw.githubusercontent.com/guillempuche/text-to-speech/main/install.sh | bash
 ```
 
-### macOS (Intel)
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/guillempuche/text-to-speech/main/install.ps1 | iex
+```
+
+### Advanced Options
 
 ```bash
-curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-x64
-chmod +x tts
+# Install specific version
+TTS_VERSION=v2024.01.01 curl -fsSL .../install.sh | bash
+
+# Custom install directory
+TTS_INSTALL_DIR=~/.local/bin curl -fsSL .../install.sh | bash
 ```
-
-### Linux
-
-```bash
-curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-linux-x64
-chmod +x tts
-```
-
-### Windows
-
-Download `tts-windows-x64.exe` from [Releases](https://github.com/guillempuche/text-to-speech/releases/latest).
 
 ## Quick Start
 
@@ -108,13 +104,13 @@ tts generate "**/*.txt"              # Glob: recursive search
 
 Options:
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--reference-id` | Voice model ID | Config default |
-| `--format` | Output format (mp3\|wav\|pcm) | mp3 |
-| `--speed` | Speech speed (0.5-2.0) | 1.0 |
-| `--output-dir` | Output directory | ./audio_output |
-| `--env-file` | Path to .env file | - |
+| Option           | Description                   | Default        |
+| ---------------- | ----------------------------- | -------------- |
+| `--reference-id` | Voice model ID                | Config default |
+| `--format`       | Output format (mp3\|wav\|pcm) | mp3            |
+| `--speed`        | Speech speed (0.5-2.0)        | 1.0            |
+| `--output-dir`   | Output directory              | ./audio_output |
+| `--env-file`     | Path to .env file             | -              |
 
 ### Voice Cloning
 
@@ -126,12 +122,12 @@ Pairs each audio file with its matching `.txt` transcript (e.g. `en_1.wav` + `en
 
 Options:
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--title` | Voice model name | Required |
-| `--visibility` | private\|public\|unlist | private |
-| `--tags` | Space-separated tags | - |
-| `--enhance` | Audio quality enhancement | - |
+| Option         | Description               | Default  |
+| -------------- | ------------------------- | -------- |
+| `--title`      | Voice model name          | Required |
+| `--visibility` | private\|public\|unlist   | private  |
+| `--tags`       | Space-separated tags      | -        |
+| `--enhance`    | Audio quality enhancement | -        |
 
 ### List Voice Models
 

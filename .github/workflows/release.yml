@@ -99,6 +99,12 @@ jobs:
           path: binaries
           merge-multiple: true
 
+      - name: Generate checksums
+        run: |
+          cd binaries
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
       - name: Extract changelog for this version
         id: changelog
         run: |
@@ -125,23 +131,20 @@ jobs:
 
             ## Install
 
+            **macOS & Linux:**
             ```bash
-            # macOS Apple Silicon
-            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-arm64 && chmod +x tts
-
-            # macOS Intel
-            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-macos-x64 && chmod +x tts
-
-            # Linux
-            curl -L -o tts https://github.com/guillempuche/text-to-speech/releases/latest/download/tts-linux-x64 && chmod +x tts
+            curl -fsSL https://raw.githubusercontent.com/guillempuche/text-to-speech/main/install.sh | bash
             ```
 
-            Windows: Download `tts-windows-x64.exe` above.
+            **Windows (PowerShell as Administrator):**
+            ```powershell
+            irm https://raw.githubusercontent.com/guillempuche/text-to-speech/main/install.ps1 | iex
+            ```
 
             ## Setup
 
             ```bash
-            ./tts configure <your-api-key>  # Get key at https://fish.audio
-            ./tts generate ./texts --reference-id <voice-id>
-            ./tts update  # Check for updates
+            tts configure api-key         # Set your API key (get one at https://fish.audio)
+            tts configure voice <id>      # Set default voice model
+            tts generate ./texts          # Generate speech from text files
             ```
