@@ -6,6 +6,7 @@
       "Bash(date:*)",
       "Bash(find:*)",
       "Bash(git add:*)",
+      "Bash(git branch:*)",
       "Bash(git commit:*)",
       "Bash(git describe:*)",
       "Bash(git diff:*)",

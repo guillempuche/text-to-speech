@@ -7,6 +7,14 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 ## [Unreleased]
 
+## [2026.01.27.1]
+
+### Added
+
+- Cross-platform uninstall scripts (`uninstall.sh`, `uninstall.ps1`)
+- Uninstall documentation in README
+- Reorganized AGENTS.md with key files reference
+
 ## [2026.01.27]
 
 ### Added
