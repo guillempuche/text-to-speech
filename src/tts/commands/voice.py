@@ -75,7 +75,9 @@ def upload(
         Literal["private", "public", "unlist"],
         Parameter(help="Voice model visibility"),
     ] = "private",
-    tags: Annotated[list[str] | None, Parameter(help="Tags for the voice model")] = None,
+    tags: Annotated[
+        list[str] | None, Parameter(help="Tags for the voice model")
+    ] = None,
     env_file: Annotated[
         Path | None, Parameter(name="--env-file", help="Path to .env file")
     ] = None,
@@ -135,7 +137,9 @@ def upload(
 
     if texts and not all_have_transcripts:
         print("\nWarning: some files have transcripts and some don't.")
-        print("Provide transcripts for ALL files or none. Ignoring partial transcripts.")
+        print(
+            "Provide transcripts for ALL files or none. Ignoring partial transcripts."
+        )
         texts = []
 
     print(f"\nCreating voice model: {title}")
@@ -165,6 +169,50 @@ def upload(
         sys.exit(1)
 
 
+def _list_voices(env_file: Path | None = None) -> None:
+    """Shared implementation for listing voice models."""
+    load_api_key(env_file)
+    client = get_fish_client()
+
+    try:
+        result = client.voices.list(self_only=True, page_size=100)
+        if not result.items:
+            print("No voice models found.")
+            return
+
+        print(f"Found {result.total} voice model(s):\n")
+        for v in result.items:
+            print(f"ID: {v.id}")
+            print(f"  Title: {v.title}")
+            if v.description:
+                print(f"  Description: {v.description}")
+            if hasattr(v, "visibility") and v.visibility:
+                print(f"  Visibility: {v.visibility}")
+            if hasattr(v, "languages") and v.languages:
+                print(f"  Languages: {', '.join(v.languages)}")
+            if hasattr(v, "tags") and v.tags:
+                print(f"  Tags: {', '.join(v.tags)}")
+            if hasattr(v, "state") and v.state:
+                print(f"  State: {v.state}")
+            if hasattr(v, "created_at") and v.created_at:
+                print(f"  Created: {v.created_at}")
+            print()
+    except Exception as e:
+        print(f"Error listing voices: {e}")
+        sys.exit(1)
+
+
+@app.command(name="list")
+def list_voices(
+    *,
+    env_file: Annotated[
+        Path | None, Parameter(name="--env-file", help="Path to .env file")
+    ] = None,
+) -> None:
+    """List your voice models."""
+    _list_voices(env_file)
+
+
 @app.command
 def list_models(
     *,
@@ -172,19 +220,5 @@ def list_models(
         Path | None, Parameter(name="--env-file", help="Path to .env file")
     ] = None,
 ) -> None:
-    """List your voice models."""
-    load_api_key(env_file)
-    client = get_fish_client()
-
-    try:
-        voices = client.voices.list()
-        if not voices:
-            print("No voice models found.")
-            return
-
-        print(f"Found {len(voices)} voice model(s):\n")
-        for v in voices:
-            print(f"  {v.id}  {v.title}")
-    except Exception as e:
-        print(f"Error listing voices: {e}")
-        sys.exit(1)
+    """List your voice models (alias for 'list')."""
+    _list_voices(env_file)

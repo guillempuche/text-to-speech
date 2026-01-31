@@ -1,15 +1,12 @@
 """Tests for voice management commands."""
 
 import pytest
-from pathlib import Path
 
 from tts.commands.voice import (
     find_audio_files,
     read_transcript,
-    convert_to_wav,
     upload,
     list_models,
-    AUDIO_EXTENSIONS,
 )
 
 
@@ -261,10 +258,11 @@ class TestListModels:
 
     def test_shows_no_models_message(self, monkeypatch, mocker, capsys):
         """List models should show message when no models found."""
-        # GIVEN API returns empty list
+        # GIVEN API returns empty paginated response
         monkeypatch.setenv("FISH_API_KEY", "test-key")
         mock_client = mocker.MagicMock()
-        mock_client.voices.list.return_value = []
+        mock_result = mocker.MagicMock(items=[], total=0)
+        mock_client.voices.list.return_value = mock_result
         mocker.patch("fishaudio.FishAudio", return_value=mock_client)
 
         # WHEN list_models is called
@@ -276,21 +274,60 @@ class TestListModels:
 
     def test_lists_voice_models(self, monkeypatch, mocker, capsys):
         """List models should display voice models."""
-        # GIVEN API returns voice models
+        # GIVEN API returns voice models in paginated response
         monkeypatch.setenv("FISH_API_KEY", "test-key")
-        mock_voice1 = mocker.MagicMock(id="voice-1", title="Voice One")
-        mock_voice2 = mocker.MagicMock(id="voice-2", title="Voice Two")
+        mock_voice1 = mocker.MagicMock(
+            id="voice-1",
+            title="Voice One",
+            description="Description one",
+            visibility="private",
+            languages=["en"],
+            tags=["male"],
+            state="created",
+            created_at="2025-01-01T00:00:00Z",
+        )
+        mock_voice2 = mocker.MagicMock(
+            id="voice-2",
+            title="Voice Two",
+            description="",
+            visibility="public",
+            languages=[],
+            tags=[],
+            state="created",
+            created_at="2025-01-02T00:00:00Z",
+        )
+        mock_result = mocker.MagicMock(items=[mock_voice1, mock_voice2], total=2)
         mock_client = mocker.MagicMock()
-        mock_client.voices.list.return_value = [mock_voice1, mock_voice2]
+        mock_client.voices.list.return_value = mock_result
         mocker.patch("fishaudio.FishAudio", return_value=mock_client)
 
         # WHEN list_models is called
         list_models()
 
-        # THEN voice models should be listed
+        # THEN voice models should be listed with details
         output = capsys.readouterr().out
         assert "voice-1" in output
         assert "Voice One" in output
         assert "voice-2" in output
         assert "Voice Two" in output
         assert "2 voice model(s)" in output
+        # Should show additional details
+        assert "Description one" in output
+        assert "private" in output
+        assert "en" in output
+        assert "male" in output
+
+    def test_uses_self_only_parameter(self, monkeypatch, mocker, capsys):
+        """List models should use self_only=True to list only user's voices."""
+        # GIVEN API setup
+        monkeypatch.setenv("FISH_API_KEY", "test-key")
+        mock_result = mocker.MagicMock(items=[], total=0)
+        mock_client = mocker.MagicMock()
+        mock_client.voices.list.return_value = mock_result
+        mocker.patch("fishaudio.FishAudio", return_value=mock_client)
+
+        # WHEN list_models is called
+        list_models()
+
+        # THEN API should be called with self_only=True
+        mock_client.voices.list.assert_called_once_with(self_only=True, page_size=100)
