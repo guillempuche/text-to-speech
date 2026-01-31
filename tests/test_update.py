@@ -1,11 +1,15 @@
 """Tests for update command."""
 
+from pathlib import Path
 import pytest
 
 from tts.commands.update import (
     get_platform_binary,
     parse_version,
     fetch_latest_release,
+    get_binary_path,
+    fetch_checksums,
+    verify_checksum,
     update,
 )
 
@@ -169,23 +173,22 @@ class TestUpdate:
         output = capsys.readouterr().out
         assert "up to date" in output.lower()
 
-    def test_shows_download_instructions(self, mocker, capsys):
-        """Update should show download instructions when update available."""
-        # GIVEN API returns newer version
+    def test_shows_pip_instructions_when_not_binary(self, mocker, capsys):
+        """Update should show pip install instructions when not running as binary."""
+        # GIVEN API returns newer version and not running as binary
         mocker.patch(
             "tts.commands.update.fetch_latest_release",
             return_value={"tag_name": "v2099.01.01"},
         )
-        mocker.patch("platform.system", return_value="Linux")
-        mocker.patch("platform.machine", return_value="x86_64")
+        mocker.patch("tts.commands.update.get_binary_path", return_value=None)
 
         # WHEN update is called (not check-only)
         update(check=False)
 
-        # THEN download instructions should be shown
+        # THEN pip install instructions should be shown
         output = capsys.readouterr().out
-        assert "Download" in output
-        assert "tts-linux-x64" in output
+        assert "pip install --upgrade" in output
+        assert "download binary" in output.lower()
 
     def test_check_only_skips_download_instructions(self, mocker, capsys):
         """Update with --check should skip download instructions."""
@@ -216,3 +219,106 @@ class TestUpdate:
         assert exc_info.value.code == 1
         output = capsys.readouterr().out
         assert "Could not fetch" in output
+
+
+class TestGetBinaryPath:
+    """Tests for binary path detection."""
+
+    def test_returns_none_when_pyapp_not_set(self, mocker):
+        """Should return None when PYAPP env var is not set."""
+        # GIVEN PYAPP is not set
+        mocker.patch.dict("os.environ", {}, clear=True)
+
+        # WHEN get_binary_path is called
+        result = get_binary_path()
+
+        # THEN None should be returned
+        assert result is None
+
+    def test_returns_path_when_pyapp_set(self, mocker):
+        """Should return path when PYAPP env var is set."""
+        # GIVEN PYAPP is set and sys.executable points to binary
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", "/usr/local/bin/tts")
+
+        # WHEN get_binary_path is called
+        result = get_binary_path()
+
+        # THEN binary path should be returned
+        assert result == Path("/usr/local/bin/tts")
+
+    def test_returns_path_for_windows_binary(self, mocker):
+        """Should return path for Windows tts.exe binary."""
+        # GIVEN PYAPP is set and sys.executable points to tts.exe
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", "C:\\Program Files\\tts\\tts.exe")
+
+        # WHEN get_binary_path is called
+        result = get_binary_path()
+
+        # THEN binary path should be returned
+        assert result == Path("C:\\Program Files\\tts\\tts.exe")
+
+
+class TestFetchChecksums:
+    """Tests for checksum fetching."""
+
+    def test_parses_checksums_file(self, mocker):
+        """Should parse checksums.txt format."""
+        # GIVEN checksums file content
+        content = b"abc123  tts-linux-x64\ndef456  tts-macos-arm64"
+        mock_response = mocker.MagicMock()
+        mock_response.read.return_value = content
+        mock_response.__enter__ = mocker.MagicMock(return_value=mock_response)
+        mock_response.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("urllib.request.urlopen", return_value=mock_response)
+
+        # WHEN fetch_checksums is called
+        result = fetch_checksums("v2025.01.01")
+
+        # THEN checksums should be parsed
+        assert result == {
+            "tts-linux-x64": "abc123",
+            "tts-macos-arm64": "def456",
+        }
+
+    def test_returns_empty_on_network_error(self, mocker):
+        """Should return empty dict on network error."""
+        # GIVEN network error
+        mocker.patch("urllib.request.urlopen", side_effect=Exception("Network error"))
+
+        # WHEN fetch_checksums is called
+        result = fetch_checksums("v2025.01.01")
+
+        # THEN empty dict should be returned
+        assert result == {}
+
+
+class TestVerifyChecksum:
+    """Tests for checksum verification."""
+
+    def test_verifies_correct_checksum(self, tmp_path):
+        """Should return True for correct checksum."""
+        # GIVEN a file with known content
+        test_file = tmp_path / "test.bin"
+        test_file.write_bytes(b"hello world")
+        # SHA256 of "hello world"
+        expected = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+
+        # WHEN verify_checksum is called
+        result = verify_checksum(test_file, expected)
+
+        # THEN True should be returned
+        assert result is True
+
+    def test_rejects_incorrect_checksum(self, tmp_path):
+        """Should return False for incorrect checksum."""
+        # GIVEN a file with known content
+        test_file = tmp_path / "test.bin"
+        test_file.write_bytes(b"hello world")
+
+        # WHEN verify_checksum is called with wrong hash
+        result = verify_checksum(test_file, "wronghash")
+
+        # THEN False should be returned
+        assert result is False
