@@ -163,7 +163,7 @@ def update(
         bool, Parameter(name="--force", help="Update without confirmation prompt")
     ] = False,
 ) -> None:
-    """Check for updates and auto-update if running as binary."""
+    """Check for updates and auto-update if running as binary. Config is preserved."""
     # Clean up old binary from previous update (Windows)
     if platform.system() == "Windows":
         cleanup_old_binary()
