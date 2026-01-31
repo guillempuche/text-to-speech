@@ -7,6 +7,22 @@ Versioning: [CalVer](https://calver.org/) (YYYY.MM.DD)
 
 ## [Unreleased]
 
+## [2026.01.31.1]
+
+### Added
+
+- Auto-update functionality with SHA256 checksum verification
+- `--force` flag for update command to skip confirmation
+- Progress bar for binary downloads
+- SEO metadata (keywords, classifiers, URLs) in pyproject.toml
+- GitHub repository topics for discoverability
+
+### Changed
+
+- README restructured with Features section and Use Cases
+- Binary detection now uses PYAPP environment variable
+- Update help clarifies config is preserved
+
 ## [2026.01.31]
 
 ### Added
