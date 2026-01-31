@@ -8,8 +8,10 @@ from tts.commands.update import (
     parse_version,
     fetch_latest_release,
     get_binary_path,
+    download_file,
     fetch_checksums,
     verify_checksum,
+    cleanup_old_binary,
     update,
 )
 
@@ -322,3 +324,233 @@ class TestVerifyChecksum:
 
         # THEN False should be returned
         assert result is False
+
+
+class TestDownloadFile:
+    """Tests for download_file function."""
+
+    def test_downloads_file_to_destination(self, tmp_path, mocker):
+        """Should download file content to destination path."""
+        # GIVEN a URL that returns content
+        content = b"binary content here"
+        mock_response = mocker.MagicMock()
+        mock_response.headers = {"Content-Length": str(len(content))}
+        mock_response.read.side_effect = [content, b""]
+        mock_response.__enter__ = mocker.MagicMock(return_value=mock_response)
+        mock_response.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("urllib.request.urlopen", return_value=mock_response)
+
+        dest = tmp_path / "downloaded.bin"
+
+        # WHEN download_file is called
+        download_file("https://example.com/file.bin", dest, show_progress=False)
+
+        # THEN file should be written
+        assert dest.exists()
+        assert dest.read_bytes() == content
+
+    def test_raises_on_network_error(self, tmp_path, mocker):
+        """Should raise exception on network error."""
+        # GIVEN network error
+        mocker.patch(
+            "urllib.request.urlopen", side_effect=Exception("Connection refused")
+        )
+
+        dest = tmp_path / "downloaded.bin"
+
+        # WHEN download_file is called
+        # THEN exception should be raised
+        with pytest.raises(Exception, match="Connection refused"):
+            download_file("https://example.com/file.bin", dest)
+
+
+class TestCleanupOldBinary:
+    """Tests for cleanup_old_binary function."""
+
+    def test_removes_old_backup_file(self, tmp_path, mocker):
+        """Should remove .old backup file when it exists."""
+        # GIVEN binary path with .old backup
+        binary_path = tmp_path / "tts"
+        binary_path.write_text("current")
+        old_path = tmp_path / "tts.old"
+        old_path.write_text("old backup")
+
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+
+        # WHEN cleanup_old_binary is called
+        cleanup_old_binary()
+
+        # THEN .old file should be removed
+        assert not old_path.exists()
+        assert binary_path.exists()
+
+    def test_does_nothing_when_no_old_file(self, tmp_path, mocker):
+        """Should not fail when no .old file exists."""
+        # GIVEN binary path without .old backup
+        binary_path = tmp_path / "tts"
+        binary_path.write_text("current")
+
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+
+        # WHEN cleanup_old_binary is called
+        # THEN should not raise
+        cleanup_old_binary()
+
+        assert binary_path.exists()
+
+    def test_does_nothing_when_not_binary(self, mocker):
+        """Should do nothing when not running as binary."""
+        # GIVEN not running as binary (no PYAPP)
+        mocker.patch.dict("os.environ", {}, clear=True)
+
+        # WHEN cleanup_old_binary is called
+        # THEN should not raise
+        cleanup_old_binary()
+
+
+class TestUpdateAdvanced:
+    """Advanced tests for update command scenarios."""
+
+    def test_force_flag_skips_confirmation(self, tmp_path, mocker, capsys):
+        """Update with --force should skip user confirmation."""
+        # GIVEN newer version available and running as binary
+        mocker.patch(
+            "tts.commands.update.fetch_latest_release",
+            return_value={"tag_name": "v2099.01.01"},
+        )
+        binary_path = tmp_path / "tts"
+        binary_path.write_bytes(b"old binary")
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+        mocker.patch("tts.commands.update.fetch_checksums", return_value={})
+        mocker.patch("tts.commands.update.download_file")
+        mocker.patch("shutil.move")
+
+        # Mock input should NOT be called with --force
+        mocker.patch("builtins.input")
+
+        # WHEN update is called with force=True
+        update(force=True)
+
+        # THEN input should not be called for confirmation
+        # (it may be called for checksum warning, but not for update confirmation)
+        output = capsys.readouterr().out
+        assert "Proceed with update?" not in output
+
+    def test_user_declines_update(self, tmp_path, mocker, capsys):
+        """Update should cancel when user declines."""
+        # GIVEN newer version available and running as binary
+        mocker.patch(
+            "tts.commands.update.fetch_latest_release",
+            return_value={"tag_name": "v2099.01.01"},
+        )
+        binary_path = tmp_path / "tts"
+        binary_path.write_bytes(b"old binary")
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+
+        # User declines
+        mocker.patch("builtins.input", return_value="n")
+
+        # WHEN update is called
+        update()
+
+        # THEN update should be cancelled
+        output = capsys.readouterr().out
+        assert "cancelled" in output.lower()
+
+    def test_download_failure_exits(self, tmp_path, mocker, capsys):
+        """Update should exit on download failure."""
+        # GIVEN newer version available and download fails
+        mocker.patch(
+            "tts.commands.update.fetch_latest_release",
+            return_value={"tag_name": "v2099.01.01"},
+        )
+        binary_path = tmp_path / "tts"
+        binary_path.write_bytes(b"old binary")
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+        mocker.patch("tts.commands.update.fetch_checksums", return_value={})
+        mocker.patch(
+            "tts.commands.update.download_file",
+            side_effect=Exception("Download failed"),
+        )
+        mocker.patch("builtins.input", return_value="y")
+
+        # WHEN update is called
+        with pytest.raises(SystemExit) as exc_info:
+            update(force=True)
+
+        # THEN should exit with error
+        assert exc_info.value.code == 1
+        output = capsys.readouterr().out
+        assert "Download failed" in output
+
+    def test_checksum_mismatch_aborts(self, tmp_path, mocker, capsys):
+        """Update should abort on checksum mismatch."""
+        # GIVEN newer version with checksum that won't match
+        mocker.patch(
+            "tts.commands.update.fetch_latest_release",
+            return_value={"tag_name": "v2099.01.01"},
+        )
+        binary_path = tmp_path / "tts"
+        binary_path.write_bytes(b"old binary")
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+        mocker.patch("platform.system", return_value="Linux")
+        mocker.patch("platform.machine", return_value="x86_64")
+        mocker.patch(
+            "tts.commands.update.fetch_checksums",
+            return_value={"tts-linux-x64": "expected_checksum_here"},
+        )
+
+        # Download writes a file that won't match checksum
+        def fake_download(url, dest, show_progress=True):
+            dest.write_bytes(b"downloaded content")
+
+        mocker.patch("tts.commands.update.download_file", side_effect=fake_download)
+        mocker.patch("tts.commands.update.verify_checksum", return_value=False)
+
+        # WHEN update is called with force
+        with pytest.raises(SystemExit) as exc_info:
+            update(force=True)
+
+        # THEN should exit with error
+        assert exc_info.value.code == 1
+        output = capsys.readouterr().out
+        assert "Checksum verification failed" in output
+
+    def test_successful_update_shows_success(self, tmp_path, mocker, capsys):
+        """Update should show success message after completing."""
+        # GIVEN newer version available
+        mocker.patch(
+            "tts.commands.update.fetch_latest_release",
+            return_value={"tag_name": "v2099.01.01"},
+        )
+        binary_path = tmp_path / "tts"
+        binary_path.write_bytes(b"old binary")
+        mocker.patch.dict("os.environ", {"PYAPP": "1"})
+        mocker.patch("sys.executable", str(binary_path))
+        mocker.patch("platform.system", return_value="Linux")
+        mocker.patch("platform.machine", return_value="x86_64")
+        mocker.patch(
+            "tts.commands.update.fetch_checksums",
+            return_value={"tts-linux-x64": "abc123"},
+        )
+
+        def fake_download(url, dest, show_progress=True):
+            dest.write_bytes(b"new binary content")
+
+        mocker.patch("tts.commands.update.download_file", side_effect=fake_download)
+        mocker.patch("tts.commands.update.verify_checksum", return_value=True)
+        mocker.patch("shutil.move")
+
+        # WHEN update is called with force
+        update(force=True)
+
+        # THEN success message should be shown
+        output = capsys.readouterr().out
+        assert "Successfully updated" in output
+        assert "2099.01.01" in output

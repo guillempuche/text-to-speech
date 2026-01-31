@@ -5,6 +5,7 @@ import pytest
 from tts.commands.voice import (
     find_audio_files,
     read_transcript,
+    convert_to_wav,
     upload,
     list_models,
 )
@@ -64,6 +65,60 @@ class TestFindAudioFiles:
 
         # THEN both should be found
         assert len(result) == 2
+
+    def test_exits_on_directory_read_error(self, tmp_path, mocker):
+        """Should exit when directory cannot be read."""
+        # GIVEN a directory that raises OSError
+        mocker.patch("pathlib.Path.iterdir", side_effect=OSError("Permission denied"))
+
+        # WHEN find_audio_files is called
+        with pytest.raises(SystemExit) as exc_info:
+            find_audio_files(tmp_path)
+
+        # THEN should exit with error
+        assert exc_info.value.code == 1
+
+
+class TestConvertToWav:
+    """Tests for convert_to_wav function."""
+
+    def test_converts_audio_via_ffmpeg(self, tmp_path, mocker):
+        """Should convert audio file to WAV using ffmpeg."""
+        # GIVEN an audio file and ffmpeg succeeds
+        audio_file = tmp_path / "audio.mp3"
+        audio_file.write_bytes(b"fake mp3")
+        wav_content = b"RIFF....WAVEfmt "
+
+        mock_run = mocker.patch("subprocess.run")
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = wav_content
+
+        # WHEN convert_to_wav is called
+        result = convert_to_wav(audio_file)
+
+        # THEN ffmpeg should be called with correct args
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        assert call_args[0] == "ffmpeg"
+        assert "-f" in call_args
+        assert "wav" in call_args
+        # AND WAV content should be returned
+        assert result == wav_content
+
+    def test_raises_on_ffmpeg_error(self, tmp_path, mocker):
+        """Should raise RuntimeError when ffmpeg fails."""
+        # GIVEN an audio file and ffmpeg fails
+        audio_file = tmp_path / "audio.mp3"
+        audio_file.write_bytes(b"fake mp3")
+
+        mock_run = mocker.patch("subprocess.run")
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stderr = b"Error: Invalid input\nConversion failed"
+
+        # WHEN convert_to_wav is called
+        # THEN RuntimeError should be raised with last line of stderr
+        with pytest.raises(RuntimeError, match="Conversion failed"):
+            convert_to_wav(audio_file)
 
 
 class TestReadTranscript:
@@ -127,12 +182,14 @@ class TestReadTranscript:
 class TestUpload:
     """Tests for upload command."""
 
-    def test_requires_api_key(self, tmp_path, capsys, monkeypatch):
+    def test_requires_api_key(self, tmp_path, capsys, monkeypatch, mocker):
         """Upload should fail without API key."""
         # GIVEN a directory with audio file and no credentials
         (tmp_path / "sample.wav").write_bytes(b"fake audio")
         monkeypatch.setattr("tts.common.CREDENTIALS_FILE", tmp_path / "nonexistent")
         monkeypatch.chdir(tmp_path)  # Ensure no .env in cwd
+        # Mock keyring to return None (no stored key)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value=None)
 
         # WHEN upload is called without API key
         with pytest.raises(SystemExit) as exc_info:
@@ -241,11 +298,13 @@ class TestUpload:
 class TestListModels:
     """Tests for list_models command."""
 
-    def test_requires_api_key(self, tmp_path, capsys, monkeypatch):
+    def test_requires_api_key(self, tmp_path, capsys, monkeypatch, mocker):
         """List models should fail without API key."""
         # GIVEN no API key and no credentials
         monkeypatch.setattr("tts.common.CREDENTIALS_FILE", tmp_path / "nonexistent")
         monkeypatch.chdir(tmp_path)  # Ensure no .env in cwd
+        # Mock keyring to return None (no stored key)
+        mocker.patch("tts.common.get_api_key_from_keyring", return_value=None)
 
         # WHEN list_models is called
         with pytest.raises(SystemExit) as exc_info:
@@ -331,3 +390,72 @@ class TestListModels:
 
         # THEN API should be called with self_only=True
         mock_client.voices.list.assert_called_once_with(self_only=True, page_size=100)
+
+    def test_exits_on_api_error(self, monkeypatch, mocker, capsys):
+        """List models should exit on API error."""
+        # GIVEN API raises exception
+        monkeypatch.setenv("FISH_API_KEY", "test-key")
+        mock_client = mocker.MagicMock()
+        mock_client.voices.list.side_effect = Exception("API rate limit exceeded")
+        mocker.patch("fishaudio.FishAudio", return_value=mock_client)
+
+        # WHEN list_models is called
+        with pytest.raises(SystemExit) as exc_info:
+            list_models()
+
+        # THEN should exit with error
+        assert exc_info.value.code == 1
+        output = capsys.readouterr().out
+        assert "Error listing voices" in output
+
+
+class TestUploadErrors:
+    """Tests for upload error handling."""
+
+    def test_exits_on_api_error(self, tmp_path, monkeypatch, mocker, capsys):
+        """Upload should exit on API error."""
+        # GIVEN audio file and API fails
+        (tmp_path / "sample.wav").write_bytes(b"audio content")
+
+        monkeypatch.setenv("FISH_API_KEY", "test-key")
+        mock_client = mocker.MagicMock()
+        mock_client.voices.create.side_effect = Exception("Insufficient credits")
+        mocker.patch("fishaudio.FishAudio", return_value=mock_client)
+
+        # WHEN upload is called
+        with pytest.raises(SystemExit) as exc_info:
+            upload(tmp_path, title="Test Voice")
+
+        # THEN should exit with error
+        assert exc_info.value.code == 1
+        output = capsys.readouterr().out
+        assert "Error creating voice model" in output
+
+    def test_handles_conversion_error(self, tmp_path, monkeypatch, mocker, capsys):
+        """Upload should skip files that fail conversion."""
+        # GIVEN mp3 file that fails conversion
+        (tmp_path / "bad.mp3").write_bytes(b"corrupt audio")
+        (tmp_path / "good.wav").write_bytes(b"good audio")
+
+        monkeypatch.setenv("FISH_API_KEY", "test-key")
+        mock_client = mocker.MagicMock()
+        mock_client.voices.create.return_value = mocker.MagicMock(id="voice-123")
+        mocker.patch("fishaudio.FishAudio", return_value=mock_client)
+
+        # Mock convert_to_wav to fail for mp3
+        def convert_mock(path):
+            if path.suffix == ".mp3":
+                raise RuntimeError("ffmpeg error")
+            return b"wav content"
+
+        mocker.patch("tts.commands.voice.convert_to_wav", side_effect=convert_mock)
+
+        # WHEN upload is called
+        upload(tmp_path, title="Test Voice")
+
+        # THEN should show skipped files
+        output = capsys.readouterr().out
+        assert "Skipped" in output
+        assert "bad.mp3" in output
+        # AND voice should still be created with good file
+        mock_client.voices.create.assert_called_once()
