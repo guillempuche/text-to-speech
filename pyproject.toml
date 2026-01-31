@@ -3,11 +3,30 @@ name = "text-to-speech"
 version = "2026.01.31"
 description = "Text-to-speech CLI for Fish Audio"
 requires-python = ">=3.13"
+keywords = [
+  "text-to-speech",
+  "tts",
+  "voice-cloning",
+  "speech-synthesis",
+  "fish-audio",
+  "cli",
+  "voice-generation",
+  "ai-voice",
+]
+classifiers = [
+  "Environment :: Console",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
 dependencies = [
   "cyclopts>=4.5.0",
   "fish-audio-sdk>=1.2.0",
   "keyring>=25.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/guillempuche/text-to-speech"
+Repository = "https://github.com/guillempuche/text-to-speech"
+Issues = "https://github.com/guillempuche/text-to-speech/issues"
 
 [project.scripts]
 tts = "tts.cli:main"
